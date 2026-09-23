@@ -1,0 +1,27 @@
+{
+  "name": "queueless-smartqueue-backend",
+  "version": "1.0.0",
+  "description": "Backend API & Real-time WebSocket server for QueueLess Smart Queue Management",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node tests/test-api.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  },
+  "keywords": [
+    "queueless",
+    "queue-management",
+    "smartqueue",
+    "express",
+    "websockets",
+    "sqlite"
+  ],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QueueLess Smart Queue Engine — Live Dashboard & Control Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --card-bg: rgba(18, 25, 43, 0.85);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --action-blue: #2563eb;
+      --action-blue-hover: #1d4ed8;
+      --accent-cyan: #06b6d4;
+      --success-green: #10b981;
+      --warning-amber: #f59e0b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', -apple-system, sans-serif;
+      background: radial-gradient(circle at 15% 15%, #172554 0%, var(--bg-dark) 55%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 28px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--action-blue), var(--accent-cyan));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.35);
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--success-green);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success-green);
+      box-shadow: 0 0 10px var(--success-green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 900px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .big-token-display {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 16px;
+      padding: 24px 16px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .token-box {
+      text-align: center;
+    }
+
+    .token-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .token-value {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .token-value.serving {
+      color: #ffffff;
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    }
+
+    .token-value.next {
+      color: var(--accent-cyan);
+      text-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+    }
+
+    .arrow-icon {
+      font-size: 28px;
+      color: var(--action-blue);
+    }
+
+    .btn {
+      cursor: pointer;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      font-weight: 600;
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--action-blue), #1d4ed8);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+      width: 100%;
+      height: 52px;
+      font-size: 16px;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .counters-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .counter-item {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+
+    .counter-item.active {
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    .counter-name {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .counter-status {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+
+    .counter-status.on {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success-green);
+    }
+
+    .counter-status.off {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning-amber);
+    }
+
+    .btn-toggle {
+      width: 100%;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 8px;
+    }
+
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 600px) {
+      .metrics-row { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .metric-card {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .metric-title {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .event-log {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background: #060911;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      max-height: 220px;
+      overflow-y: auto;
+      color: #38bdf8;
+    }
+
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      display: flex;
+      gap: 10px;
+    }
+
+    .log-time {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .api-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      background: rgba(37, 99, 235, 0.2);
+      border: 1px solid rgba(37, 99, 235, 0.4);
+      color: #60a5fa;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="logo-area">
+        <div class="logo-icon">⚡</div>
+        <div>
+          <h1>QueueLess Smart Queue Engine</h1>
+          <div class="subtitle">Live Backend Monitor & Interactive Control Dashboard</div>
+        </div>
+      </div>
+      <div class="status-badge" id="wsStatus">
+        <div class="status-dot"></div>
+        <span>Connecting...</span>
+      </div>
+    </header>
+
+    <!-- Metrics Row -->
+    <div class="metrics-row">
+      <div class="metric-card">
+        <div class="metric-title">Today's Tokens</div>
+        <div class="metric-value" id="totalTokens">247</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Completed</div>
+        <div class="metric-value" style="color: var(--success-green);" id="completedTokens">198</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">People Waiting</div>
+        <div class="metric-value" style="color: var(--warning-amber);" id="waitingTokens">28</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Avg Wait Time</div>
+        <div class="metric-value" style="color: var(--accent-cyan);" id="avgWait">18 min</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Staff Live Queue Controls -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🎟️</span>
+            <span>Live Counter Serving</span>
+          </div>
+          <span class="api-badge">POST /api/staff/queue/next</span>
+        </div>
+
+        <div class="big-token-display">
+          <div class="token-box">
+            <div class="token-label">Currently Serving</div>
+            <div class="token-value serving" id="currentServing">A32</div>
+          </div>
+          <div class="arrow-icon">➔</div>
+          <div class="token-box">
+            <div class="token-label">Next Up</div>
+            <div class="token-value next" id="nextToken">A33</div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="callNextBtn" onclick="callNextToken()">
+          📢 CALL NEXT TOKEN
+        </button>
+
+        <div style="display: flex; gap: 12px; margin-top: 12px;">
+          <button class="btn btn-secondary" style="flex: 1;" onclick="takeNewToken()">
+            ➕ Issue Token (User)
+          </button>
+          <button class="btn btn-secondary" style="flex: 1;" onclick="pauseQueue()">
+            ⏸️ Pause Queue
+          </button>
+        </div>
+      </div>
+
+      <!-- Counter Management -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🏢</span>
+            <span>Counter Management & Dynamic ETA</span>
+          </div>
+          <span class="api-badge">PATCH /api/counters/:id/toggle</span>
+        </div>
+
+        <div class="counters-grid" id="countersList">
+          <!-- Populated by JS -->
+        </div>
+
+        <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid var(--card-border); border-radius: 12px; padding: 14px; margin-top: 10px;">
+          <div style="font-size: 13px; font-weight: 600; color: var(--accent-cyan); margin-bottom: 4px;">Dynamic ETA Recalculation Engine</div>
+          <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;" id="etaReason">
+            ETA is dynamically calculated based on current active counters and queue velocity.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Real-time WebSocket Event Log -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span>📡</span>
+          <span>Real-time WebSocket Live Feed</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted);">ws://localhost:5000/ws</div>
+      </div>
+      <div class="event-log" id="eventLog">
+        <div class="log-entry">
+          <span class="log-time">[System]</span>
+          <span>Connecting to QueueLess live WebSocket stream...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let ws;
+    const logEl = document.getElementById('eventLog');
+    const wsStatusEl = document.getElementById('wsStatus');
+
+    function log(message) {
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      div.innerHTML = `<span class="log-time">[${time}]</span> <span>${message}</span>`;
+      logEl.prepend(div);
+    }
+
+    function connectWebSocket() {
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
+
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        wsStatusEl.innerHTML = `<div class="status-dot"></div><span>Live Sync Connected</span>`;
+        log('🟢 WebSocket connection established successfully.');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          log(`⚡ Event: <strong style="color: #67e8f9;">${payload.event}</strong> ${JSON.stringify(payload.data || {})}`);
+          handleLiveUpdate(payload);
+        } catch (e) {
+          log(`Payload: ${event.data}`);
+        }
+      };
+
+      ws.onclose = () => {
+        wsStatusEl.innerHTML = `<span style="color: #ef4444;">● Disconnected</span>`;
+        log('🔴 WebSocket closed. Reconnecting in 3s...');
+        setTimeout(connectWebSocket, 3000);
+      };
+    }
+
+    async function loadInitialData() {
+      try {
+        // Fetch counters
+        const countersRes = await fetch('/api/counters');
+        const counters = await countersRes.json();
+        renderCounters(counters);
+
+        // Fetch services
+        const servRes = await fetch('/api/organizations/org_1/services');
+        const services = await servRes.json();
+        if (services.length > 0) {
+          const s = services[0];
+          document.getElementById('currentServing').innerText = s.currentServingToken;
+          const currNum = parseInt(s.currentServingToken.substring(1)) || 32;
+          document.getElementById('nextToken').innerText = 'A' + (currNum + 1);
+        }
+
+        // Fetch staff stats
+        const statsRes = await fetch('/api/staff/stats');
+        const stats = await statsRes.json();
+        document.getElementById('totalTokens').innerText = stats.totalTokens;
+        document.getElementById('completedTokens').innerText = stats.completed;
+        document.getElementById('waitingTokens').innerText = stats.waiting;
+        document.getElementById('avgWait').innerText = stats.avgWaitMinutes + ' min';
+      } catch (err) {
+        console.error('Failed to load initial data:', err);
+      }
+    }
+
+    function renderCounters(counters) {
+      const listEl = document.getElementById('countersList');
+      listEl.innerHTML = '';
+      counters.forEach(c => {
+        const item = document.createElement('div');
+        item.className = `counter-item ${c.isActive ? 'active' : ''}`;
+        item.innerHTML = `
+          <div class="counter-name">${c.name}</div>
+          <div class="counter-status ${c.isActive ? 'on' : 'off'}">${c.isActive ? 'Active' : 'Offline'}</div>
+          <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Serving: ${c.currentlyServingToken || '—'}</div>
+          <button class="btn btn-secondary btn-toggle" onclick="toggleCounter(${c.id})">
+            ${c.isActive ? 'Turn Off' : 'Turn On'}
+          </button>
+        `;
+        listEl.appendChild(item);
+      });
+    }
+
+    async function toggleCounter(counterId) {
+      try {
+        const res = await fetch(`/api/counters/${counterId}/toggle`, { method: 'PATCH' });
+        const data = await res.json();
+        if (data.counters) renderCounters(data.counters);
+        if (data.etaUpdateReason) {
+          document.getElementById('etaReason').innerText = data.etaUpdateReason;
+        }
+      } catch (err) {
+        console.error('Toggle counter error:', err);
+      }
+    }
+
+    async function callNextToken() {
+      try {
+        const res = await fetch('/api/staff/queue/next', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serviceId: 'serv_1', counterId: 2 })
+        });
+        const data = await res.json();
+        if (data.currentlyServingToken) {
+          document.getElementById('currentServing').innerText = data.currentlyServingToken;
+          const currNum = parseInt(data.currentlyServingToken.substring(1)) || 33;
+          document.getElementById('nextToken').innerText = 'A' + (currNum + 1);
+        }
+        loadInitialData();
+      } catch (err) {
+        console.error('Call next token error:', err);
+      }
+    }
+
+    async function takeNewToken() {
+      try {
+        const res = await fetch('/api/tokens/take', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serviceId: 'serv_1', userId: 'user_guest' })
+        });
+        const data = await res.json();
+        log(`🎟️ New Token Issued: <strong>${data.tokenNumber}</strong> (Wait: ${data.estimatedWaitMinutes} min)`);
+        loadInitialData();
+      } catch (err) {
+        console.error('Take token error:', err);
+      }
+    }
+
+    async function pauseQueue() {
+      try {
+        await fetch('/api/staff/queue/pause', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serviceId: 'serv_1', isPaused: true })
+        });
+        alert('Queue paused! Notification broadcasted to all connected clients.');
+      } catch (err) {
+        console.error('Pause queue error:', err);
+      }
+    }
+
+    function handleLiveUpdate(payload) {
+      if (payload.event === 'COUNTER_TOGGLED') {
+        renderCounters(payload.data.counters);
+        if (payload.data.etaUpdateReason) {
+          document.getElementById('etaReason').innerText = payload.data.etaUpdateReason;
+        }
+      } else if (payload.event === 'TOKEN_CALLED') {
+        document.getElementById('currentServing').innerText = payload.data.currentlyServingToken;
+        const currNum = parseInt(payload.data.currentlyServingToken.substring(1)) || 33;
+        document.getElementById('nextToken').innerText = 'A' + (currNum + 1);
+        loadInitialData();
+      } else if (payload.event === 'TOKEN_ISSUED') {
+        loadInitialData();
+      }
+    }
+
+    // Startup
+    loadInitialData();
+    connectWebSocket();
+  </script>
+</body>
+</html>

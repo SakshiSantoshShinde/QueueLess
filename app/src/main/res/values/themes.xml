@@ -1,0 +1,12 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.QueuelessSmartQueue" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/deep_navy</item>
+        <item name="colorSecondary">@color/action_blue</item>
+        <item name="android:windowBackground">@color/app_background</item>
+        <item name="android:statusBarColor">@color/deep_navy</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <style name="Theme.QueuelessSmartQueue" parent="Base.Theme.QueuelessSmartQueue" />
+</resources>

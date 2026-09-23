@@ -1,0 +1,17 @@
+*.iml
+.gradle
+/local.properties
+local.properties
+/.idea
+.DS_Store
+/build
+app/build/
+/captures
+.externalNativeBuild
+.cxx
+
+# Backend
+backend/node_modules/
+backend/db/*.db
+backend/db/*.db-wal
+backend/db/*.db-shm

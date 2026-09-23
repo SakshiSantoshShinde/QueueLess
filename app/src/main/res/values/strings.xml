@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">QueueLess</string>
+    <string name="tagline">Skip the wait. Know your turn.</string>
+    <string name="welcome_title">Welcome to QueueLess</string>
+    <string name="welcome_subtitle">Join queues remotely and save your time.</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_my_queue">My Queue</string>
+    <string name="nav_history">History</string>
+    <string name="nav_profile">Profile</string>
+</resources>
