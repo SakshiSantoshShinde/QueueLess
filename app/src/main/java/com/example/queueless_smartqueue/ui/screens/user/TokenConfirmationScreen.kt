@@ -31,12 +31,13 @@ fun TokenConfirmationScreen(
     onViewLiveQueueClick: () -> Unit,
     onCancelTokenClick: () -> Unit
 ) {
-    val tokenNumber = tokenInfo?.tokenNumber ?: "A47"
-    val serviceName = tokenInfo?.serviceName ?: "Bonafide Certificate"
-    val peopleAhead = tokenInfo?.peopleAhead ?: 15
-    val estimatedWaitMinutes = tokenInfo?.estimatedWaitMinutes ?: 42
-    val assignedCounter = tokenInfo?.assignedCounter ?: "Counter 2"
-    val progressSteps = tokenInfo?.progressSteps ?: listOf("A32", "A35", "A39", "A43", "A47")
+    val tokenNumber = tokenInfo?.tokenNumber ?: "---"
+    val serviceName = tokenInfo?.serviceName ?: "Queue Service"
+    val peopleAhead = tokenInfo?.peopleAhead ?: 0
+    val estimatedWaitMinutes = tokenInfo?.estimatedWaitMinutes ?: 0
+    val assignedCounter = tokenInfo?.assignedCounter ?: "Counter 1"
+    val progressSteps = tokenInfo?.progressSteps ?: listOf(tokenNumber)
+
 
     Column(
         modifier = Modifier

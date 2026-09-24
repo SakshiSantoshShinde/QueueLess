@@ -89,4 +89,69 @@ router.get('/:id', (req, res) => {
   }
 });
 
+// POST /api/organizations/:orgId/services or POST /api/services
+router.post('/', (req, res) => {
+  try {
+    const orgId = req.params.orgId || req.body.orgId;
+    const {
+      name,
+      categoryEmoji = '📄',
+      tokenPrefix = 'A',
+      avgServiceTimeMinutes = 2.5
+    } = req.body;
+
+    if (!orgId) {
+      return res.status(400).json({ error: 'Organization ID is required' });
+    }
+    if (!name || name.trim() === '') {
+      return res.status(400).json({ error: 'Service name is required' });
+    }
+
+    const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(orgId);
+    if (!org) {
+      return res.status(404).json({ error: 'Organization not found' });
+    }
+
+    const servId = `serv_${Date.now()}`;
+    const prefix = (tokenPrefix || 'A').toUpperCase();
+    const initialToken = `${prefix}01`;
+    const activeCounters = Math.max(1, org.active_counters_count || 2);
+    const avgTime = Number(avgServiceTimeMinutes) || 2.5;
+
+    db.prepare(`
+      INSERT INTO services (id, org_id, name, current_serving_token, people_waiting, estimated_wait_minutes, active_counters, category_emoji, token_prefix, last_token_num, avg_service_time_minutes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      servId,
+      orgId,
+      name.trim(),
+      initialToken,
+      0,
+      0,
+      activeCounters,
+      categoryEmoji || '📄',
+      prefix,
+      0,
+      avgTime
+    );
+
+    const created = {
+      id: servId,
+      orgId,
+      name: name.trim(),
+      currentServingToken: initialToken,
+      peopleWaiting: 0,
+      estimatedWaitMinutes: 0,
+      activeCounters,
+      categoryEmoji: categoryEmoji || '📄'
+    };
+
+    res.status(201).json(created);
+  } catch (err) {
+    console.error('Error creating service:', err);
+    res.status(500).json({ error: 'Failed to create service', message: err.message });
+  }
+});
+
 export default router;
+

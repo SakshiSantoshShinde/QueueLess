@@ -40,6 +40,40 @@ async function runTests() {
     if (typeof data[0].estimatedWaitMinutes !== 'number') throw new Error('Missing estimatedWaitMinutes');
   });
 
+  // 3.1 Register New Organization with Services & Fetch Back
+  let registeredOrgId = null;
+  await test('POST /api/organizations (Register Organization with Services)', async () => {
+    const res = await fetch(`${BASE_URL}/organizations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Apex Diagnostic Center',
+        category: 'Hospital',
+        iconEmoji: '🧪',
+        address: '42 Health Boulevard',
+        activeCountersCount: 2,
+        services: [
+          { name: 'Blood Test & Pathology', categoryEmoji: '🩸', tokenPrefix: 'B', avgServiceTimeMinutes: 3.0 },
+          { name: 'MRI & Radiology', categoryEmoji: '🩻', tokenPrefix: 'M', avgServiceTimeMinutes: 5.0 }
+        ]
+      })
+    });
+    const data = await res.json();
+    if (!data.id || data.name !== 'Apex Diagnostic Center' || !Array.isArray(data.services) || data.services.length !== 2) {
+      throw new Error(`Invalid register response: ${JSON.stringify(data)}`);
+    }
+    registeredOrgId = data.id;
+
+    // Fetch its services from database
+    const servicesRes = await fetch(`${BASE_URL}/organizations/${registeredOrgId}/services`);
+    const srvs = await servicesRes.json();
+    if (!Array.isArray(srvs) || srvs.length !== 2) {
+      throw new Error(`Expected 2 services for registered org, got: ${JSON.stringify(srvs)}`);
+    }
+    console.log(`     -> Registered Org ID: ${registeredOrgId} with ${srvs.length} services fetched from DB`);
+  });
+
+
   // 4. Issue a new Token (User flow)
   let issuedTokenNumber = null;
   await test('POST /api/tokens/take', async () => {

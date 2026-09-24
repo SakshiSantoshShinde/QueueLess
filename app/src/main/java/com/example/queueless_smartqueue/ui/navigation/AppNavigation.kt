@@ -95,6 +95,8 @@ fun AppNavigation(
                     organizations = organizations,
                     onOrganizationSelected = { org ->
                         selectedOrg = org
+                        viewModel.fetchServices(org.id)
+                        viewModel.fetchCounters(org.id)
                         navController.navigate("org_services")
                     },
                     onNotificationsClick = {
@@ -108,6 +110,8 @@ fun AppNavigation(
                     }
                 )
             }
+
+
 
             // Organization Services Screen
             composable("org_services") {
@@ -126,6 +130,7 @@ fun AppNavigation(
             composable("take_token") {
                 TakeTokenScreen(
                     service = selectedService,
+                    orgName = selectedOrg?.name,
                     onBackClick = { navController.popBackStack() },
                     onTakeTokenConfirmed = {
                         if (selectedService != null) {
@@ -137,6 +142,7 @@ fun AppNavigation(
                     }
                 )
             }
+
 
             // Token Confirmation Screen
             composable("token_confirmation") {
@@ -228,7 +234,27 @@ fun AppNavigation(
                     onNavigateToQueueManagement = { navController.navigate("staff_queue") },
                     onNavigateToCounters = { navController.navigate("counter_management") },
                     onNavigateToAnalytics = { navController.navigate("admin_analytics") },
+                    onNavigateToRegisterOrg = { navController.navigate("register_org") },
                     onBackToUserMode = { navController.navigate("home") }
+                )
+            }
+
+            // Register Organization Screen
+            composable("register_org") {
+                val isLoading by viewModel.isLoading.collectAsState()
+                RegisterOrganizationScreen(
+                    isLoading = isLoading,
+                    onBackClick = { navController.popBackStack() },
+                    onRegisterSubmit = { request ->
+                        viewModel.registerOrganization(
+                            request = request,
+                            onSuccess = { newOrg ->
+                                selectedOrg = newOrg
+                                navController.popBackStack()
+                            },
+                            onError = { /* handled in screen */ }
+                        )
+                    }
                 )
             }
 
@@ -243,13 +269,18 @@ fun AppNavigation(
 
             // Staff Queue Management Screen
             composable("staff_queue") {
+                val activeCounter = counters.find { it.id == 2 } ?: counters.firstOrNull { it.isActive }
+                val activeService = services.firstOrNull()
                 StaffQueueManagementScreen(
                     currentServingToken = currentServingToken,
-                    onCallNext = { viewModel.callNextToken() },
+                    serviceName = activeService?.name ?: "Bonafide Certificate",
+                    counterName = activeCounter?.name ?: "Counter 2",
+                    onCallNext = { viewModel.callNextToken(activeService?.id, activeCounter?.id ?: 2) },
                     onPauseQueue = { viewModel.setSpecialState(com.example.queueless_smartqueue.model.SpecialUIState.QUEUE_PAUSED) },
                     onBackClick = { navController.popBackStack() }
                 )
             }
+
 
             // Admin Analytics Screen
             composable("admin_analytics") {
@@ -260,3 +291,4 @@ fun AppNavigation(
         }
     }
 }
+

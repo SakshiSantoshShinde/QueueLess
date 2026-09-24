@@ -32,3 +32,21 @@ data class GenericResponse(
     val success: Boolean,
     val message: String? = null
 )
+
+data class RegisterServiceRequest(
+    val name: String,
+    val categoryEmoji: String = "📄",
+    val tokenPrefix: String = "A",
+    val avgServiceTimeMinutes: Double = 2.5
+)
+
+data class RegisterOrgRequest(
+    val name: String,
+    val category: String,
+    val iconEmoji: String = "🏢",
+    val address: String,
+    val activeCountersCount: Int = 2,
+    val isOpen: Boolean = true,
+    val services: List<RegisterServiceRequest> = emptyList()
+)
+

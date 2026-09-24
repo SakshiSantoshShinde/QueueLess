@@ -24,14 +24,15 @@ import com.example.queueless_smartqueue.ui.theme.*
 @Composable
 fun TakeTokenScreen(
     service: QueueService?,
+    orgName: String? = null,
     onBackClick: () -> Unit,
     onTakeTokenConfirmed: () -> Unit
 ) {
-    val serviceName = service?.name ?: "Bonafide Certificate"
-    val currentQueueToken = service?.currentServingToken ?: "A32"
-    val peopleWaiting = service?.peopleWaiting ?: 15
-    val activeCounters = service?.activeCounters ?: 2
-    val estWaitMinutes = service?.estimatedWaitMinutes ?: 35
+    val serviceName = service?.name ?: "Service"
+    val currentQueueToken = service?.currentServingToken ?: "A01"
+    val peopleWaiting = service?.peopleWaiting ?: 0
+    val activeCounters = service?.activeCounters ?: 1
+    val estWaitMinutes = service?.estimatedWaitMinutes ?: 0
 
     Column(
         modifier = Modifier
@@ -40,10 +41,11 @@ fun TakeTokenScreen(
     ) {
         QueueLessTopBar(
             title = serviceName,
-            subtitle = "RIT College Office",
+            subtitle = orgName ?: "QueueLess Smart Queue",
             showBackButton = true,
             onBackClick = onBackClick
         )
+
 
         Column(
             modifier = Modifier

@@ -22,6 +22,27 @@ class QueueRepository(
         }
     }
 
+    suspend fun registerOrganization(request: RegisterOrgRequest): Result<Organization> = withContext(Dispatchers.IO) {
+        try {
+            val org = apiService.registerOrganization(request)
+            Result.success(org)
+        } catch (e: Exception) {
+            Log.w(TAG, "Backend unreachable for registerOrganization(): ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun addService(orgId: String, request: RegisterServiceRequest): Result<QueueService> = withContext(Dispatchers.IO) {
+        try {
+            val service = apiService.addService(orgId, request)
+            Result.success(service)
+        } catch (e: Exception) {
+            Log.w(TAG, "Backend unreachable for addService(): ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+
     suspend fun getServices(orgId: String = "org_1"): Result<List<QueueService>> = withContext(Dispatchers.IO) {
         try {
             val services = apiService.getServices(orgId)

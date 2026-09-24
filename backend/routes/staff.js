@@ -63,7 +63,7 @@ router.post('/queue/next', (req, res) => {
   try {
     const { serviceId = 'serv_1', counterId = 2 } = req.body;
 
-    const service = db.prepare(`
+    let service = db.prepare(`
       SELECT s.*, o.name as org_name,
         (SELECT COUNT(*) FROM counters WHERE org_id = s.org_id AND is_active = 1) as active_counters_count
       FROM services s
@@ -72,16 +72,32 @@ router.post('/queue/next', (req, res) => {
     `).get(serviceId);
 
     if (!service) {
+      service = db.prepare(`
+        SELECT s.*, o.name as org_name,
+          (SELECT COUNT(*) FROM counters WHERE org_id = s.org_id AND is_active = 1) as active_counters_count
+        FROM services s
+        JOIN organizations o ON s.org_id = o.id
+        LIMIT 1
+      `).get();
+    }
+
+    if (!service) {
       return res.status(404).json({ error: 'Service not found' });
     }
 
-    const counter = db.prepare('SELECT * FROM counters WHERE id = ?').get(counterId);
+    let counter = db.prepare('SELECT * FROM counters WHERE id = ?').get(counterId);
+    if (!counter) {
+      counter = db.prepare('SELECT * FROM counters WHERE org_id = ? AND is_active = 1 LIMIT 1').get(service.org_id)
+        || db.prepare('SELECT * FROM counters WHERE org_id = ? LIMIT 1').get(service.org_id);
+    }
     const counterName = counter ? counter.name : `Counter ${counterId}`;
 
-    const currentNum = parseInt(service.current_serving_token.substring(1), 10) || 32;
+    const currentNum = parseInt(service.current_serving_token.substring(1), 10) || 36;
     const nextNum = currentNum + 1;
     const previousTokenStr = service.current_serving_token;
-    const nextTokenStr = `${service.token_prefix || 'A'}${nextNum}`;
+    const prefix = service.token_prefix || 'A';
+    const nextTokenStr = `${prefix}${nextNum < 10 ? '0' + nextNum : nextNum}`;
+
 
     // 1. Mark previous token as COMPLETED & add to history
     const prevToken = db.prepare('SELECT * FROM tokens WHERE token_number = ? AND service_id = ?').get(previousTokenStr, serviceId);

@@ -8,10 +8,22 @@ interface QueueApiService {
     @GET("organizations")
     suspend fun getOrganizations(): List<Organization>
 
+    @POST("organizations")
+    suspend fun registerOrganization(
+        @Body request: RegisterOrgRequest
+    ): Organization
+
     @GET("organizations/{orgId}/services")
     suspend fun getServices(
         @Path("orgId") orgId: String
     ): List<QueueService>
+
+    @POST("organizations/{orgId}/services")
+    suspend fun addService(
+        @Path("orgId") orgId: String,
+        @Body request: RegisterServiceRequest
+    ): QueueService
+
 
     @GET("counters")
     suspend fun getCounters(

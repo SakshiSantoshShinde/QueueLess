@@ -7,9 +7,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+
 import com.example.queueless_smartqueue.model.Organization
 import com.example.queueless_smartqueue.model.QueueService
 import com.example.queueless_smartqueue.ui.components.QueueLessTopBar
@@ -61,15 +65,42 @@ fun OrgServicesScreen(
                 )
             }
 
-            items(services) { service ->
-                ServiceCard(
-                    emoji = service.categoryEmoji,
-                    name = service.name,
-                    currentQueue = service.peopleWaiting,
-                    estimatedWaitMinutes = service.estimatedWaitMinutes,
-                    onClick = { onServiceSelected(service) }
-                )
+            if (services.isEmpty()) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 40.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(text = "📋", fontSize = 36.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "No Services Listed",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "This organization hasn't added any queue services yet.",
+                            style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
+                        )
+                    }
+                }
+            } else {
+                items(services) { service ->
+                    ServiceCard(
+                        emoji = service.categoryEmoji,
+                        name = service.name,
+                        currentQueue = service.peopleWaiting,
+                        estimatedWaitMinutes = service.estimatedWaitMinutes,
+                        onClick = { onServiceSelected(service) }
+                    )
+                }
             }
         }
     }
 }
+

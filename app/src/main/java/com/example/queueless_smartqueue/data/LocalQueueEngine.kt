@@ -15,46 +15,71 @@ import java.util.*
  * - Counter management & offline/online toggles
  * - Proactive smart notification triggers (Approaching, Proceed to Counter)
  * - User queue history & Admin analytics
+ * - Persistent default data for organizations, services, counters, tokens & stats
  */
 object LocalQueueEngine {
 
-    // 1. Organizations
-    private val _organizations = MutableStateFlow(
-        listOf(
-            Organization("org_1", "RIT College Office", "College", "🏫", "Administrative Services • Main Campus", 3, true),
-            Organization("org_2", "City Central Hospital", "Hospital", "🏥", "OPD & Registration Section", 4, true),
-            Organization("org_3", "National Apex Bank", "Bank", "🏦", "Customer Service & Forex", 2, true),
-            Organization("org_4", "Municipal Regional Office", "Government", "🏢", "Citizens Desk & Permits", 3, true)
-        )
+    // Default Organizations
+    val defaultOrganizations = listOf(
+        Organization("org_1", "RIT College Office", "College", "🏫", "Administrative Services • Main Campus", 3, true),
+        Organization("org_2", "City Central Hospital", "Hospital", "🏥", "OPD & Registration Section • Building B", 4, true),
+        Organization("org_3", "National Apex Bank", "Bank", "🏦", "Customer Service & Forex • Central Branch", 3, true),
+        Organization("org_4", "Municipal Regional Office", "Government", "🏢", "Citizens Desk & Permits • City Center", 3, true)
     )
+
+    // Default Services across all Organizations
+    val defaultServices = listOf(
+        // Org 1 Services (College)
+        QueueService("serv_1", "org_1", "Bonafide Certificate", "A36", 14, 35, 2, "📜"),
+        QueueService("serv_2", "org_1", "Scholarship Section", "B18", 8, 18, 2, "🎓"),
+        QueueService("serv_3", "org_1", "Exam & Transcript", "C05", 15, 30, 3, "📝"),
+        QueueService("serv_4", "org_1", "Fees & Finance Dept", "F12", 21, 42, 1, "💰"),
+        QueueService("serv_admit", "org_1", "Admission & Verification", "D08", 6, 15, 2, "📂"),
+
+        // Org 2 Services (Hospital)
+        QueueService("serv_5", "org_2", "General OPD Consultation", "H14", 12, 36, 3, "🩺"),
+        QueueService("serv_6", "org_2", "Laboratory & Blood Test", "L09", 6, 15, 2, "🧪"),
+        QueueService("serv_rad", "org_2", "Radiology & X-Ray", "R04", 5, 25, 2, "🩻"),
+        QueueService("serv_pharm", "org_2", "Pharmacy Dispensing", "P25", 9, 12, 3, "💊"),
+
+        // Org 3 Services (Bank)
+        QueueService("serv_7", "org_3", "Cash Deposit & Withdrawal", "D15", 7, 14, 2, "💵"),
+        QueueService("serv_8", "org_3", "Account Opening & KYC", "N04", 5, 20, 1, "💳"),
+        QueueService("serv_loan", "org_3", "Loans & Mortgages Desk", "M06", 4, 24, 1, "🏦"),
+        QueueService("serv_forex", "org_3", "Forex & International Wire", "X02", 2, 10, 1, "🌐"),
+
+        // Org 4 Services (Government)
+        QueueService("serv_9", "org_4", "Property Tax & Assessment", "T22", 10, 25, 2, "🏠"),
+        QueueService("serv_10", "org_4", "Birth & Death Certificates", "C11", 8, 16, 2, "📜"),
+        QueueService("serv_11", "org_4", "Trade License & Permits", "P05", 4, 12, 1, "📑"),
+        QueueService("serv_water", "org_4", "Water & Utilities Desk", "W07", 6, 18, 2, "💧")
+    )
+
+    // Master list of all registered services
+    private val _allServices = defaultServices.toMutableList()
+
+    // 1. Organizations (Initialized with default data and updated from database)
+    private val _organizations = MutableStateFlow(defaultOrganizations)
     val organizations: StateFlow<List<Organization>> = _organizations.asStateFlow()
 
-    // 2. Services
-    private val _services = MutableStateFlow(
-        listOf(
-            QueueService("serv_1", "org_1", "Bonafide Certificate", "A32", 15, 42, 2, "📜"),
-            QueueService("serv_2", "org_1", "Scholarship Section", "B18", 8, 18, 2, "🎓"),
-            QueueService("serv_3", "org_1", "Exam & Transcript", "C05", 15, 30, 3, "📝"),
-            QueueService("serv_4", "org_1", "Fees & Finance Dept", "F12", 21, 42, 1, "💰")
-        )
-    )
+    // 2. Services (Filtered for currently active organization)
+    private val _services = MutableStateFlow(defaultServices.filter { it.orgId == "org_1" })
     val services: StateFlow<List<QueueService>> = _services.asStateFlow()
 
-    // 3. Counters
+    // 3. Counters (Loaded with operational counters)
     private val _counters = MutableStateFlow(
         listOf(
             CounterInfo(1, "Counter 1", "A31", true),
-            CounterInfo(2, "Counter 2", "A32", true),
+            CounterInfo(2, "Counter 2", "A36", true),
             CounterInfo(3, "Counter 3", null, false)
         )
     )
     val counters: StateFlow<List<CounterInfo>> = _counters.asStateFlow()
 
     // 3.1 Global Current Serving Token
-    private var currentServingNumber = 32
-    private val tokenPrefix = "A"
+    private var currentServingNumber = 36
 
-    private val _currentServingToken = MutableStateFlow("A32")
+    private val _currentServingToken = MutableStateFlow("A36")
     val currentServingToken: StateFlow<String> = _currentServingToken.asStateFlow()
 
     // 4. User's Active Token
@@ -64,13 +89,13 @@ object LocalQueueEngine {
             serviceId = "serv_1",
             serviceName = "Bonafide Certificate",
             orgName = "RIT College Office",
-            currentlyServingToken = "A32",
-            peopleAhead = 15,
-            estimatedWaitMinutes = 42,
+            currentlyServingToken = "A36",
+            peopleAhead = 11,
+            estimatedWaitMinutes = 28,
             assignedCounter = "Counter 2",
             recommendedArrival = "11:45 AM",
             status = TokenStatus.WAITING,
-            progressSteps = listOf("A32", "A35", "A39", "A43", "A47"),
+            progressSteps = listOf("A36", "A39", "A42", "A45", "A47"),
             etaUpdateReason = null
         )
     )
@@ -81,7 +106,7 @@ object LocalQueueEngine {
         listOf(
             NotificationItem("n1", NotificationType.APPROACHING, "Your turn is approaching", "Only 3 people are ahead of you in the queue.", "2m ago"),
             NotificationItem("n2", NotificationType.UPDATED, "Queue updated", "Your estimated waiting time is now 25 minutes.", "10m ago"),
-            NotificationItem("n3", NotificationType.PROCEED, "Proceed to Counter 2", "Token A32 is currently being served at Counter 2.", "15m ago")
+            NotificationItem("n3", NotificationType.PROCEED, "Proceed to Counter 2", "Token A36 is currently being served at Counter 2.", "15m ago")
         )
     )
     val notifications: StateFlow<List<NotificationItem>> = _notifications.asStateFlow()
@@ -91,7 +116,8 @@ object LocalQueueEngine {
         listOf(
             QueueHistoryItem("h1", "Bonafide Certificate", "RIT College Office", "Today • A47", "A47", "Completed"),
             QueueHistoryItem("h2", "Scholarship Department", "RIT College Office", "Yesterday • B23", "B23", "Completed"),
-            QueueHistoryItem("h3", "OPD Consultation", "City Central Hospital", "15 Aug • H12", "H12", "Completed")
+            QueueHistoryItem("h3", "General OPD Consultation", "City Central Hospital", "15 Aug • H12", "H12", "Completed"),
+            QueueHistoryItem("h4", "Cash Deposit & Withdrawal", "National Apex Bank", "10 Aug • D05", "D05", "Completed")
         )
     )
     val history: StateFlow<List<QueueHistoryItem>> = _history.asStateFlow()
@@ -110,6 +136,73 @@ object LocalQueueEngine {
     // 8. Special UI State
     private val _specialState = MutableStateFlow(SpecialUIState.NORMAL)
     val specialState: StateFlow<SpecialUIState> = _specialState.asStateFlow()
+
+    // Setters for syncing with Database
+    fun setOrganizations(list: List<Organization>) {
+        if (list.isNotEmpty()) {
+            _organizations.value = list
+        }
+    }
+
+    fun setServices(list: List<QueueService>) {
+        if (list.isNotEmpty()) {
+            _services.value = list
+            // Update master list with newly fetched/updated services
+            list.forEach { updated ->
+                val index = _allServices.indexOfFirst { it.id == updated.id }
+                if (index != -1) {
+                    _allServices[index] = updated
+                } else {
+                    _allServices.add(updated)
+                }
+            }
+        }
+    }
+
+    fun filterServicesForOrg(orgId: String) {
+        val filtered = _allServices.filter { it.orgId == orgId }
+        _services.value = if (filtered.isNotEmpty()) filtered else _allServices.filter { it.orgId == "org_1" }
+    }
+
+    fun setCounters(list: List<CounterInfo>) {
+        if (list.isNotEmpty()) {
+            _counters.value = list
+        }
+    }
+
+    fun setUserToken(token: TokenInfo?) {
+        _userToken.value = token
+    }
+
+    fun setNotifications(list: List<NotificationItem>) {
+        if (list.isNotEmpty()) {
+            _notifications.value = list
+        }
+    }
+
+    fun setHistory(list: List<QueueHistoryItem>) {
+        if (list.isNotEmpty()) {
+            _history.value = list
+        }
+    }
+
+    fun setStaffStats(stats: StaffStats) {
+        _staffStats.value = stats
+    }
+
+    fun setCurrentServingToken(token: String) {
+        _currentServingToken.value = token
+        val digits = token.filter { it.isDigit() }.toIntOrNull()
+        if (digits != null) {
+            currentServingNumber = digits
+        }
+    }
+
+    fun registerOrganizationLocally(org: Organization, servicesList: List<QueueService>) {
+        _organizations.value = _organizations.value + org
+        _allServices.addAll(servicesList)
+        _services.value = servicesList
+    }
 
     // Internal sequence counter for tokens
     private var lastTokenSeq = 47
@@ -132,7 +225,7 @@ object LocalQueueEngine {
      */
     fun takeToken(service: QueueService): TokenInfo {
         lastTokenSeq++
-        val tokenPrefix = service.currentServingToken.take(1).ifEmpty { "A" }
+        val tokenPrefix = service.currentServingToken.takeWhile { !it.isDigit() }.ifEmpty { "A" }
         val newTokenNumber = "$tokenPrefix$lastTokenSeq"
 
         val activeCounters = getActiveCountersCount()
@@ -146,14 +239,14 @@ object LocalQueueEngine {
         val arrivalTimeStr = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(arrivalCalendar.time)
 
         // Generate milestone steps between currently serving and new token
-        val currentNum = service.currentServingToken.substring(1).toIntOrNull() ?: 32
+        val currentNum = service.currentServingToken.filter { it.isDigit() }.toIntOrNull() ?: 36
         val steps = generateProgressSteps(tokenPrefix, currentNum, lastTokenSeq)
 
         val newToken = TokenInfo(
             tokenNumber = newTokenNumber,
             serviceId = service.id,
             serviceName = service.name,
-            orgName = "RIT College Office",
+            orgName = _organizations.value.find { it.id == service.orgId }?.name ?: "Organization",
             currentlyServingToken = service.currentServingToken,
             peopleAhead = peopleAhead,
             estimatedWaitMinutes = estWait,
@@ -183,18 +276,22 @@ object LocalQueueEngine {
     }
 
     /**
-     * Advance the queue (Staff Call Next Action).
+     * Advance the queue (Staff Call Next Action) with immediate local state update.
      */
-    fun callNextToken(): TokenInfo? {
-        currentServingNumber++
-        val nextTokenStr = "$tokenPrefix$currentServingNumber"
+    fun callNextToken(targetCounterId: Int = 2): TokenInfo? {
+        val currentStr = _currentServingToken.value
+        val prefix = currentStr.takeWhile { !it.isDigit() }.ifEmpty { "A" }
+        val currentNum = currentStr.filter { it.isDigit() }.toIntOrNull() ?: currentServingNumber
+        currentServingNumber = currentNum + 1
+        val hasLeadingZero = currentStr.length > prefix.length && currentStr[prefix.length] == '0' && currentServingNumber < 10
+        val nextTokenStr = if (hasLeadingZero) String.format("%s%02d", prefix, currentServingNumber) else "$prefix$currentServingNumber"
         _currentServingToken.value = nextTokenStr
 
         val activeCounters = getActiveCountersCount()
 
         // 1. Update services current serving token
-        _services.value = _services.value.map { service ->
-            if (service.id == "serv_1") {
+        _services.value = _services.value.mapIndexed { idx, service ->
+            if (idx == 0 || service.currentServingToken == currentStr || service.id == "serv_1") {
                 val newWaiting = (service.peopleWaiting - 1).coerceAtLeast(0)
                 service.copy(
                     currentServingToken = nextTokenStr,
@@ -204,9 +301,11 @@ object LocalQueueEngine {
             } else service
         }
 
-        // 2. Update Counter 2 serving token
+        // 2. Update target counter (defaults to Counter 2) serving token
         _counters.value = _counters.value.map { counter ->
-            if (counter.id == 2) counter.copy(currentlyServingToken = nextTokenStr) else counter
+            if (counter.id == targetCounterId) {
+                counter.copy(currentlyServingToken = nextTokenStr)
+            } else counter
         }
 
         // 3. Update User Token if user has an active token
@@ -227,11 +326,12 @@ object LocalQueueEngine {
             _userToken.value = updatedToken
 
             // Trigger smart proactive notifications
+            val counterName = _counters.value.find { it.id == targetCounterId }?.name ?: "Counter $targetCounterId"
             if (isNowServing) {
                 addNotification(
                     NotificationType.PROCEED,
-                    "Proceed to Counter 2",
-                    "Token ${current.tokenNumber} is currently being served at Counter 2."
+                    "Proceed to $counterName",
+                    "Token ${current.tokenNumber} is currently being served at $counterName."
                 )
             } else if (newPeopleAhead == 3) {
                 addNotification(
@@ -243,7 +343,7 @@ object LocalQueueEngine {
                 addNotification(
                     NotificationType.APPROACHING,
                     "You're next in line!",
-                    "Please proceed near Counter 2."
+                    "Please proceed near $counterName."
                 )
             }
         }
@@ -290,8 +390,9 @@ object LocalQueueEngine {
         }
 
         // Update active counters count in organizations
+        val activeOrgId = _services.value.firstOrNull()?.orgId ?: "org_1"
         _organizations.value = _organizations.value.map { org ->
-            if (org.id == "org_1") org.copy(activeCountersCount = activeCount) else org
+            if (org.id == activeOrgId) org.copy(activeCountersCount = activeCount) else org
         }
 
         // Add notification for counter status change

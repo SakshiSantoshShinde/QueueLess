@@ -10,9 +10,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapHoriz
+
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,6 +40,8 @@ fun HomeScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
+
+
 
     val categories = listOf(
         CategoryItem("All", "✨"),
@@ -250,13 +255,52 @@ fun HomeScreen(
             // Nearby / Recent Section
             item {
                 Text(
-                    text = "Nearby / Recent",
+                    text = "Nearby Organizations (${filteredOrgs.size})",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold,
                         color = TextPrimary
                     )
                 )
             }
+
+            // Empty state if no organizations found
+            if (filteredOrgs.isEmpty()) {
+                item {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = CardWhite),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(text = "🏢", fontSize = 42.sp)
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "No Organizations Found",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "No queues are currently active under this category.",
+                                style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+
 
             // Organization Cards List
             items(filteredOrgs) { org ->
@@ -271,5 +315,6 @@ fun HomeScreen(
         }
     }
 }
+
 
 private data class CategoryItem(val name: String, val emoji: String)

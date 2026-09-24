@@ -34,8 +34,10 @@ fun StaffDashboardScreen(
     onNavigateToQueueManagement: () -> Unit,
     onNavigateToCounters: () -> Unit,
     onNavigateToAnalytics: () -> Unit,
+    onNavigateToRegisterOrg: () -> Unit,
     onBackToUserMode: () -> Unit
 ) {
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -152,9 +154,20 @@ fun StaffDashboardScreen(
                     onClick = onNavigateToAnalytics
                 )
             }
+
+            item {
+                StaffActionCard(
+                    title = "Register New Organization",
+                    subtitle = "Add organization, configure services & save to database",
+                    icon = Icons.Default.Add,
+                    accentColor = ActionBlue,
+                    onClick = onNavigateToRegisterOrg
+                )
+            }
         }
     }
 }
+
 
 @Composable
 private fun StaffActionCard(

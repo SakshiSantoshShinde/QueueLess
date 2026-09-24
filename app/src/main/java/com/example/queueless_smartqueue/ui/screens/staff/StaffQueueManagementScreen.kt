@@ -28,15 +28,22 @@ import com.example.queueless_smartqueue.ui.theme.*
 
 @Composable
 fun StaffQueueManagementScreen(
-    currentServingToken: String = "A32",
+    currentServingToken: String = "A36",
+    serviceName: String = "Bonafide Certificate",
+    counterName: String = "Counter 2",
     onCallNext: () -> Unit,
     onPauseQueue: () -> Unit,
     onBackClick: () -> Unit
 ) {
     val currentTokenStr = currentServingToken
-    val nextTokenNum = (currentTokenStr.substring(1).toIntOrNull() ?: 32) + 1
-    val nextTokenStr = "A$nextTokenNum"
-    val upcomingList = (nextTokenNum..(nextTokenNum + 5)).map { "A$it" }
+    val prefix = currentTokenStr.takeWhile { !it.isDigit() }.ifEmpty { "A" }
+    val currentNum = currentTokenStr.filter { it.isDigit() }.toIntOrNull() ?: 36
+    val nextTokenNum = currentNum + 1
+    val hasLeadingZero = currentTokenStr.length > prefix.length && currentTokenStr[prefix.length] == '0' && currentNum < 10
+    val nextTokenStr = if (hasLeadingZero && nextTokenNum < 10) String.format("%s%02d", prefix, nextTokenNum) else "$prefix$nextTokenNum"
+    val upcomingList = (nextTokenNum..(nextTokenNum + 5)).map { num ->
+        if (hasLeadingZero && num < 10) String.format("%s%02d", prefix, num) else "$prefix$num"
+    }
 
     Column(
         modifier = Modifier
@@ -45,7 +52,7 @@ fun StaffQueueManagementScreen(
     ) {
         QueueLessTopBar(
             title = "Queue Management",
-            subtitle = "Bonafide Certificate • Counter 2",
+            subtitle = "$serviceName • $counterName",
             showBackButton = true,
             onBackClick = onBackClick
         )
@@ -77,10 +84,11 @@ fun StaffQueueManagementScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             StatusBadge(
-                                text = "🟢 Counter 2 Active",
+                                text = "🟢 $counterName Active",
                                 backgroundColor = StatusBackgroundGreen,
                                 textColor = SuccessGreen
                             )
+
                             Text(
                                 text = "Queue Speed: Normal",
                                 style = MaterialTheme.typography.bodySmall.copy(color = CardWhite.copy(alpha = 0.8f))
