@@ -89,7 +89,7 @@ fun RegisterOrganizationScreen(
                 .fillMaxSize()
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp)
+            contentPadding = PaddingValues(top = 16.dp, bottom = 48.dp)
         ) {
             // Error banner if any
             if (errorMessage != null) {

@@ -78,13 +78,32 @@ fun AppNavigation(
             // Login Screen
             composable("login") {
                 LoginScreen(
-                    onLoginSuccess = {
+                    onUserLoginSuccess = {
                         navController.navigate("home") {
                             popUpTo("login") { inclusive = true }
                         }
                     },
-                    onStaffLoginClick = {
-                        navController.navigate("staff_dashboard")
+                    onAdminLoginSuccess = {
+                        navController.navigate("staff_dashboard") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    },
+                    onNavigateToRegister = {
+                        navController.navigate("register_user")
+                    }
+                )
+            }
+
+            // User Registration Screen (Strictly for regular users)
+            composable("register_user") {
+                UserRegistrationScreen(
+                    onRegistrationSuccess = {
+                        navController.navigate("home") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    },
+                    onBackToLogin = {
+                        navController.popBackStack()
                     }
                 )
             }
@@ -102,11 +121,11 @@ fun AppNavigation(
                     onNotificationsClick = {
                         navController.navigate("notifications")
                     },
-                    onSwitchToStaffMode = {
-                        navController.navigate("staff_dashboard")
-                    },
                     onDemoStatesClick = {
                         navController.navigate("state_demo")
+                    },
+                    onWatchVideoGuideClick = {
+                        navController.navigate("video_tutorial")
                     }
                 )
             }
@@ -207,12 +226,19 @@ fun AppNavigation(
                 ProfileScreen(
                     onLogoutClick = {
                         navController.navigate("login") {
-                            popUpTo("home") { inclusive = true }
+                            popUpTo(0) { inclusive = true }
                         }
                     },
-                    onSwitchToStaffMode = {
-                        navController.navigate("staff_dashboard")
+                    onWatchVideoGuideClick = {
+                        navController.navigate("video_tutorial")
                     }
+                )
+            }
+
+            // Video Tutorial Screen (Multimedia)
+            composable("video_tutorial") {
+                VideoTutorialScreen(
+                    onBackClick = { navController.popBackStack() }
                 )
             }
 
@@ -227,7 +253,7 @@ fun AppNavigation(
                 )
             }
 
-            // Staff Dashboard Screen
+            // Staff & Admin Dashboard Screen
             composable("staff_dashboard") {
                 StaffDashboardScreen(
                     stats = staffStats,
@@ -235,7 +261,19 @@ fun AppNavigation(
                     onNavigateToCounters = { navController.navigate("counter_management") },
                     onNavigateToAnalytics = { navController.navigate("admin_analytics") },
                     onNavigateToRegisterOrg = { navController.navigate("register_org") },
-                    onBackToUserMode = { navController.navigate("home") }
+                    onNavigateToVideoManagement = { navController.navigate("admin_video_management") },
+                    onBackToUserMode = {
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            // Admin Video Management Screen (Multimedia Control)
+            composable("admin_video_management") {
+                AdminVideoManagementScreen(
+                    onBackClick = { navController.popBackStack() }
                 )
             }
 

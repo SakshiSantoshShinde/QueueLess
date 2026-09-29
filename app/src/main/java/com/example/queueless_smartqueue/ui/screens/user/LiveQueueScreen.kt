@@ -13,6 +13,8 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,7 +68,7 @@ fun LiveQueueScreen(
                 .fillMaxSize()
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
+            contentPadding = PaddingValues(top = 16.dp, bottom = 48.dp)
         ) {
             // Live Status Header Banner
             item {
@@ -312,9 +314,25 @@ fun LiveQueueScreen(
                 }
             }
 
-            // Cancel button action
+            // SMS & Cancel button actions
             item {
-                Spacer(modifier = Modifier.height(8.dp))
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val currentUser by com.example.queueless_smartqueue.data.UserAuthManager.currentUser.collectAsState()
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                SecondaryButton(
+                    text = "Send Queue Update via SMS",
+                    onClick = {
+                        val message = "QueueLess Alert: Your Token #${tokenInfo.tokenNumber} for ${tokenInfo.serviceName} at ${tokenInfo.orgName} is waiting. Currently serving: ${tokenInfo.currentlyServingToken}. People ahead: ${tokenInfo.peopleAhead}. Assigned counter: ${tokenInfo.assignedCounter}. Estimated arrival: ${tokenInfo.recommendedArrival}."
+                        com.example.queueless_smartqueue.util.SmsHelper.openSmsApp(context, currentUser.phone, message)
+                    },
+                    borderColor = ActionBlue,
+                    textColor = ActionBlue
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
                 SecondaryButton(
                     text = "Cancel Token",
                     onClick = onCancelToken,

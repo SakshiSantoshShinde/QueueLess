@@ -39,7 +39,7 @@ fun HistoryScreen(
                 .fillMaxSize()
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
+            contentPadding = PaddingValues(top = 16.dp, bottom = 96.dp)
         ) {
             item {
                 Text(

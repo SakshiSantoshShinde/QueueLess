@@ -35,6 +35,7 @@ fun StaffDashboardScreen(
     onNavigateToCounters: () -> Unit,
     onNavigateToAnalytics: () -> Unit,
     onNavigateToRegisterOrg: () -> Unit,
+    onNavigateToVideoManagement: () -> Unit = {},
     onBackToUserMode: () -> Unit
 ) {
 
@@ -55,7 +56,7 @@ fun StaffDashboardScreen(
                 .fillMaxSize()
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
+            contentPadding = PaddingValues(top = 16.dp, bottom = 48.dp)
         ) {
             // Today Summary Header
             item {
@@ -162,6 +163,16 @@ fun StaffDashboardScreen(
                     icon = Icons.Default.Add,
                     accentColor = ActionBlue,
                     onClick = onNavigateToRegisterOrg
+                )
+            }
+
+            item {
+                StaffActionCard(
+                    title = "App Tutorial Video Management",
+                    subtitle = "Upload or replace the app walkthrough video for users",
+                    icon = Icons.Outlined.VideoLibrary,
+                    accentColor = ActionBlue,
+                    onClick = onNavigateToVideoManagement
                 )
             }
         }

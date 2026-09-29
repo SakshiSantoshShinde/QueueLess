@@ -19,35 +19,22 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_revert" />
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/tvOrgTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_marginStart="12dp"
             android:layout_toEndOf="@id/btnBack"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/tvOrgTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="College Office"
-                android:textColor="@color/text_primary"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Select a service"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-        </LinearLayout>
+            android:text="Organization Services"
+            android:textColor="@color/text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
     </RelativeLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvServices"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="20dp" />
+        android:padding="16dp" />
 </LinearLayout>

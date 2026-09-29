@@ -1,5 +1,8 @@
 package com.example.queueless_smartqueue
 
+import android.content.Context
+import android.content.IntentFilter
+import android.net.ConnectivityManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,13 +11,30 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.example.queueless_smartqueue.receiver.NetworkStateMonitor
+import com.example.queueless_smartqueue.receiver.NetworkStateReceiver
 import com.example.queueless_smartqueue.ui.navigation.AppNavigation
 import com.example.queueless_smartqueue.ui.theme.QueueLessTheme
 
 class MainActivity : ComponentActivity() {
+
+    private val networkReceiver = NetworkStateReceiver()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Register broadcast receiver for connectivity changes
+        @Suppress("DEPRECATION")
+        val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+        registerReceiver(networkReceiver, filter)
+
+        // Perform initial connectivity check
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        @Suppress("DEPRECATION")
+        val isConnected = cm?.activeNetworkInfo?.isConnected == true
+        NetworkStateMonitor.updateStatus(isConnected, this)
+
         setContent {
             QueueLessTheme {
                 Surface(
@@ -25,5 +45,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            unregisterReceiver(networkReceiver)
+        } catch (_: Exception) {}
     }
 }

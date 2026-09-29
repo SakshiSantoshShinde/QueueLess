@@ -7,8 +7,8 @@ import com.example.queueless_smartqueue.databinding.ItemOrganizationBinding
 import com.example.queueless_smartqueue.model.Organization
 
 class OrganizationAdapter(
-    private val orgs: List<Organization>,
-    private val onOrgSelected: (Organization) -> Unit
+    private var orgList: List<Organization>,
+    private val onItemClick: (Organization) -> Unit
 ) : RecyclerView.Adapter<OrganizationAdapter.OrgViewHolder>() {
 
     class OrgViewHolder(val binding: ItemOrganizationBinding) : RecyclerView.ViewHolder(binding.root)
@@ -19,16 +19,21 @@ class OrganizationAdapter(
     }
 
     override fun onBindViewHolder(holder: OrgViewHolder, position: Int) {
-        val org = orgs[position]
+        val org = orgList[position]
         holder.binding.tvEmoji.text = org.iconEmoji
         holder.binding.tvOrgName.text = org.name
         holder.binding.tvOrgAddress.text = org.address
         holder.binding.tvStatus.text = if (org.isOpen) "Open • ${org.activeCountersCount} counters active" else "Closed"
 
         holder.binding.btnViewServices.setOnClickListener {
-            onOrgSelected(org)
+            onItemClick(org)
         }
     }
 
-    override fun getItemCount(): Int = orgs.size
+    override fun getItemCount(): Int = orgList.size
+
+    fun updateList(newList: List<Organization>) {
+        orgList = newList
+        notifyDataSetChanged()
+    }
 }

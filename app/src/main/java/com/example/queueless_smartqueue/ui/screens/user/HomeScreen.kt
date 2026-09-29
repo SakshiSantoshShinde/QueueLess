@@ -10,12 +10,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SwapHoriz
-
-
+import androidx.compose.material.icons.outlined.OndemandVideo
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,9 +24,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.queueless_smartqueue.data.UserAuthManager
 import com.example.queueless_smartqueue.model.Organization
+import com.example.queueless_smartqueue.receiver.NetworkStateMonitor
 import com.example.queueless_smartqueue.ui.components.OrganizationCard
-import com.example.queueless_smartqueue.ui.components.QueueLessTopBar
 import com.example.queueless_smartqueue.ui.theme.*
 
 @Composable
@@ -35,13 +35,14 @@ fun HomeScreen(
     organizations: List<Organization>,
     onOrganizationSelected: (Organization) -> Unit,
     onNotificationsClick: () -> Unit,
-    onSwitchToStaffMode: () -> Unit,
-    onDemoStatesClick: () -> Unit
+    onDemoStatesClick: () -> Unit,
+    onWatchVideoGuideClick: () -> Unit = {}
 ) {
+    val currentUser by UserAuthManager.currentUser.collectAsState()
+    val isOnline by NetworkStateMonitor.isOnline.collectAsState()
+
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
-
-
 
     val categories = listOf(
         CategoryItem("All", "✨"),
@@ -76,7 +77,7 @@ fun HomeScreen(
             ) {
                 Column {
                     Text(
-                        text = "Hello, User 👋",
+                        text = "Hello, ${currentUser.name.split(" ").firstOrNull() ?: "User"} 👋",
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 22.sp,
@@ -84,12 +85,39 @@ fun HomeScreen(
                         )
                     )
                     Text(
-                        text = "Where would you like to go?",
+                        text = "Where would you like to go today?",
                         style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
                     )
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Rotating circle indicator when offline instead of text message
+                    if (!isOnline) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(20.dp),
+                            strokeWidth = 2.5.dp,
+                            color = ActionBlue
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                    }
+
+                    IconButton(
+                        onClick = onWatchVideoGuideClick,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(ChipBackground)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.OndemandVideo,
+                            contentDescription = "Video Guide",
+                            tint = ActionBlue
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
                     IconButton(
                         onClick = onNotificationsClick,
                         modifier = Modifier
@@ -103,32 +131,17 @@ fun HomeScreen(
                             tint = ActionBlue
                         )
                     }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    IconButton(
-                        onClick = onSwitchToStaffMode,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(StatusBackgroundAmber)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SwapHoriz,
-                            contentDescription = "Switch Mode",
-                            tint = DeepNavy
-                        )
-                    }
                 }
             }
         }
 
+        // Full screen scrollable column with generous bottom padding for navigation bar
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(top = 16.dp, bottom = 96.dp)
         ) {
             // Search Bar
             item {
@@ -153,6 +166,85 @@ fun HomeScreen(
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
+            }
+
+            // Multimedia App Video Guide Card
+            item {
+                Card(
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = DeepNavy),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onWatchVideoGuideClick() }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(ActionBlue),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Play Tutorial",
+                                tint = CardWhite,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "How to Use QueueLess",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = CardWhite,
+                                        fontSize = 15.sp
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = SuccessGreen
+                                ) {
+                                    Text(
+                                        text = "VIDEO",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            color = CardWhite,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 9.sp
+                                        ),
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Watch 1-minute video guide on booking & tracking queues",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = CardWhite.copy(alpha = 0.8f),
+                                    fontSize = 11.sp
+                                )
+                            )
+                        }
+
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                            contentDescription = null,
+                            tint = CardWhite.copy(alpha = 0.7f),
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
             }
 
             // Quick State Demo button banner
@@ -301,7 +393,6 @@ fun HomeScreen(
                 }
             }
 
-
             // Organization Cards List
             items(filteredOrgs) { org ->
                 OrganizationCard(
@@ -315,6 +406,5 @@ fun HomeScreen(
         }
     }
 }
-
 
 private data class CategoryItem(val name: String, val emoji: String)

@@ -3,13 +3,17 @@ package com.example.queueless_smartqueue.ui.screens.user
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,11 +53,12 @@ fun TokenConfirmationScreen(
             subtitle = serviceName
         )
 
+        val scrollState = rememberScrollState()
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
+                .verticalScroll(scrollState)
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Column(
@@ -218,11 +223,15 @@ fun TokenConfirmationScreen(
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(20.dp))
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val currentUser by com.example.queueless_smartqueue.data.UserAuthManager.currentUser.collectAsState()
+
                 PrimaryButton(
                     text = "View Live Queue",
                     onClick = onViewLiveQueueClick,
@@ -230,7 +239,19 @@ fun TokenConfirmationScreen(
                     backgroundColor = ActionBlue
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                SecondaryButton(
+                    text = "Send Token to SMS App",
+                    onClick = {
+                        val smsText = "QueueLess Token Confirmation: You have taken Token #$tokenNumber for $serviceName at ${tokenInfo?.orgName ?: "Office"}. Assigned counter: $assignedCounter. Estimated wait: $estimatedWaitMinutes mins. Recommended arrival: ${tokenInfo?.recommendedArrival ?: "Soon"}."
+                        com.example.queueless_smartqueue.util.SmsHelper.openSmsApp(context, currentUser.phone, smsText)
+                    },
+                    borderColor = ActionBlue,
+                    textColor = ActionBlue
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 SecondaryButton(
                     text = "Cancel Token",
@@ -238,6 +259,8 @@ fun TokenConfirmationScreen(
                     borderColor = StatusRed,
                     textColor = StatusRed
                 )
+
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
