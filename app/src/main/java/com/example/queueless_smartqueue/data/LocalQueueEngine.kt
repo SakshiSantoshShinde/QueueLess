@@ -1,5 +1,6 @@
 package com.example.queueless_smartqueue.data
 
+import android.content.Context
 import com.example.queueless_smartqueue.model.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -8,16 +9,19 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Self-contained Smart Queue Engine running 100% locally inside the Android app.
- * Provides complete backend business logic:
+ * Self-contained Smart Queue Engine running locally inside the Android app
+ * backed by SQLite database persistence.
+ * Provides complete business logic:
  * - Dynamic ETA recalculation based on active counters & queue depth
  * - Real-time queue progression (Call Next Token)
  * - Counter management & offline/online toggles
  * - Proactive smart notification triggers (Approaching, Proceed to Counter)
  * - User queue history & Admin analytics
- * - Persistent default data for organizations, services, counters, tokens & stats
+ * - Persistent SQLite storage for organizations, services, counters, tokens & stats
  */
 object LocalQueueEngine {
+
+    private var dbHelper: QueueDatabaseHelper? = null
 
     // Default Organizations
     val defaultOrganizations = listOf(
@@ -137,17 +141,63 @@ object LocalQueueEngine {
     private val _specialState = MutableStateFlow(SpecialUIState.NORMAL)
     val specialState: StateFlow<SpecialUIState> = _specialState.asStateFlow()
 
+    /**
+     * Initialize LocalQueueEngine with SQLite database.
+     */
+    fun init(context: Context) {
+        val helper = QueueDatabaseHelper.getInstance(context)
+        dbHelper = helper
+
+        val orgs = helper.getAllOrganizations()
+        if (orgs.isNotEmpty()) {
+            _organizations.value = orgs
+        }
+
+        val servs = helper.getAllServices()
+        if (servs.isNotEmpty()) {
+            _allServices.clear()
+            _allServices.addAll(servs)
+            val currentOrgId = _organizations.value.firstOrNull()?.id ?: "org_1"
+            _services.value = servs.filter { it.orgId == currentOrgId }
+        }
+
+        val cntrs = helper.getAllCounters()
+        if (cntrs.isNotEmpty()) {
+            _counters.value = cntrs
+        }
+
+        val activeToken = helper.getActiveToken()
+        if (activeToken != null) {
+            _userToken.value = activeToken
+            val digits = activeToken.currentlyServingToken.filter { it.isDigit() }.toIntOrNull()
+            if (digits != null) {
+                currentServingNumber = digits
+                _currentServingToken.value = activeToken.currentlyServingToken
+            }
+        }
+
+        val hist = helper.getAllHistory()
+        if (hist.isNotEmpty()) {
+            _history.value = hist
+        }
+
+        val notifs = helper.getAllNotifications()
+        if (notifs.isNotEmpty()) {
+            _notifications.value = notifs
+        }
+    }
+
     // Setters for syncing with Database
     fun setOrganizations(list: List<Organization>) {
         if (list.isNotEmpty()) {
             _organizations.value = list
+            list.forEach { dbHelper?.insertOrganization(it) }
         }
     }
 
     fun setServices(list: List<QueueService>) {
         if (list.isNotEmpty()) {
             _services.value = list
-            // Update master list with newly fetched/updated services
             list.forEach { updated ->
                 val index = _allServices.indexOfFirst { it.id == updated.id }
                 if (index != -1) {
@@ -155,6 +205,7 @@ object LocalQueueEngine {
                 } else {
                     _allServices.add(updated)
                 }
+                dbHelper?.insertService(updated)
             }
         }
     }
@@ -167,22 +218,28 @@ object LocalQueueEngine {
     fun setCounters(list: List<CounterInfo>) {
         if (list.isNotEmpty()) {
             _counters.value = list
+            list.forEach { dbHelper?.insertOrUpdateCounter(it) }
         }
     }
 
     fun setUserToken(token: TokenInfo?) {
         _userToken.value = token
+        if (token != null) {
+            dbHelper?.saveToken(token)
+        }
     }
 
     fun setNotifications(list: List<NotificationItem>) {
         if (list.isNotEmpty()) {
             _notifications.value = list
+            list.forEach { dbHelper?.insertNotification(it) }
         }
     }
 
     fun setHistory(list: List<QueueHistoryItem>) {
         if (list.isNotEmpty()) {
             _history.value = list
+            list.forEach { dbHelper?.insertHistory(it) }
         }
     }
 
@@ -202,6 +259,10 @@ object LocalQueueEngine {
         _organizations.value = _organizations.value + org
         _allServices.addAll(servicesList)
         _services.value = servicesList
+
+        // Persist to SQLite
+        dbHelper?.insertOrganization(org)
+        servicesList.forEach { dbHelper?.insertService(it) }
     }
 
     // Internal sequence counter for tokens
@@ -221,7 +282,7 @@ object LocalQueueEngine {
     }
 
     /**
-     * Issue a new token for the specified service.
+     * Issue a new token for the specified service with SQLite persistence.
      */
     fun takeToken(service: QueueService): TokenInfo {
         lastTokenSeq++
@@ -260,9 +321,16 @@ object LocalQueueEngine {
         _userToken.value = newToken
         _specialState.value = SpecialUIState.NORMAL
 
+        // Persist token into SQLite
+        dbHelper?.saveToken(newToken)
+
         // Increment waiting count in service
         _services.value = _services.value.map {
-            if (it.id == service.id) it.copy(peopleWaiting = it.peopleWaiting + 1) else it
+            if (it.id == service.id) {
+                val updatedService = it.copy(peopleWaiting = it.peopleWaiting + 1)
+                dbHelper?.updateService(updatedService)
+                updatedService
+            } else it
         }
 
         // Update Staff stats
@@ -276,7 +344,7 @@ object LocalQueueEngine {
     }
 
     /**
-     * Advance the queue (Staff Call Next Action) with immediate local state update.
+     * Advance the queue (Staff Call Next Action) with SQLite persistence.
      */
     fun callNextToken(targetCounterId: Int = 2): TokenInfo? {
         val currentStr = _currentServingToken.value
@@ -293,18 +361,22 @@ object LocalQueueEngine {
         _services.value = _services.value.mapIndexed { idx, service ->
             if (idx == 0 || service.currentServingToken == currentStr || service.id == "serv_1") {
                 val newWaiting = (service.peopleWaiting - 1).coerceAtLeast(0)
-                service.copy(
+                val updatedService = service.copy(
                     currentServingToken = nextTokenStr,
                     peopleWaiting = newWaiting,
                     estimatedWaitMinutes = calculateWaitMinutes(newWaiting, activeCounters)
                 )
+                dbHelper?.updateService(updatedService)
+                updatedService
             } else service
         }
 
         // 2. Update target counter (defaults to Counter 2) serving token
         _counters.value = _counters.value.map { counter ->
             if (counter.id == targetCounterId) {
-                counter.copy(currentlyServingToken = nextTokenStr)
+                val updated = counter.copy(currentlyServingToken = nextTokenStr)
+                dbHelper?.insertOrUpdateCounter(updated)
+                updated
             } else counter
         }
 
@@ -324,6 +396,7 @@ object LocalQueueEngine {
                 etaUpdateReason = "ETA updated based on current queue speed."
             )
             _userToken.value = updatedToken
+            dbHelper?.saveToken(updatedToken)
 
             // Trigger smart proactive notifications
             val counterName = _counters.value.find { it.id == targetCounterId }?.name ?: "Counter $targetCounterId"
@@ -364,7 +437,9 @@ object LocalQueueEngine {
     fun toggleCounter(counterId: Int) {
         val updatedCounters = _counters.value.map { counter ->
             if (counter.id == counterId) {
-                counter.copy(isActive = !counter.isActive)
+                val toggled = counter.copy(isActive = !counter.isActive)
+                dbHelper?.insertOrUpdateCounter(toggled)
+                toggled
             } else counter
         }
         _counters.value = updatedCounters
@@ -383,16 +458,22 @@ object LocalQueueEngine {
         val current = _userToken.value
         if (current != null && current.status == TokenStatus.WAITING) {
             val newWaitTime = calculateWaitMinutes(current.peopleAhead, activeCount)
-            _userToken.value = current.copy(
+            val updatedToken = current.copy(
                 estimatedWaitMinutes = newWaitTime,
                 etaUpdateReason = reason
             )
+            _userToken.value = updatedToken
+            dbHelper?.saveToken(updatedToken)
         }
 
         // Update active counters count in organizations
         val activeOrgId = _services.value.firstOrNull()?.orgId ?: "org_1"
         _organizations.value = _organizations.value.map { org ->
-            if (org.id == activeOrgId) org.copy(activeCountersCount = activeCount) else org
+            if (org.id == activeOrgId) {
+                val updatedOrg = org.copy(activeCountersCount = activeCount)
+                dbHelper?.insertOrganization(updatedOrg)
+                updatedOrg
+            } else org
         }
 
         // Add notification for counter status change
@@ -400,12 +481,12 @@ object LocalQueueEngine {
     }
 
     /**
-     * Cancel the user's active token.
+     * Cancel the user's active token and persist status to SQLite.
      */
     fun cancelToken() {
         val current = _userToken.value
         if (current != null) {
-            // Add to history as Cancelled
+            // Add to history as Cancelled in SQLite
             val historyItem = QueueHistoryItem(
                 id = "h_${System.currentTimeMillis()}",
                 serviceName = current.serviceName,
@@ -415,10 +496,16 @@ object LocalQueueEngine {
                 status = "Cancelled"
             )
             _history.value = listOf(historyItem) + _history.value
+            dbHelper?.insertHistory(historyItem)
+            dbHelper?.deleteActiveToken(current.tokenNumber)
 
             // Decrement waiting count on service
             _services.value = _services.value.map { s ->
-                if (s.id == current.serviceId) s.copy(peopleWaiting = (s.peopleWaiting - 1).coerceAtLeast(0)) else s
+                if (s.id == current.serviceId) {
+                    val updatedService = s.copy(peopleWaiting = (s.peopleWaiting - 1).coerceAtLeast(0))
+                    dbHelper?.updateService(updatedService)
+                    updatedService
+                } else s
             }
         }
 
@@ -439,6 +526,7 @@ object LocalQueueEngine {
             timeAgo = "Just now"
         )
         _notifications.value = listOf(newNotif) + _notifications.value
+        dbHelper?.insertNotification(newNotif)
     }
 
     private fun generateProgressSteps(prefix: String, currentNum: Int, targetNum: Int): List<String> {

@@ -229,26 +229,11 @@ fun TokenConfirmationScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                val context = androidx.compose.ui.platform.LocalContext.current
-                val currentUser by com.example.queueless_smartqueue.data.UserAuthManager.currentUser.collectAsState()
-
                 PrimaryButton(
                     text = "View Live Queue",
                     onClick = onViewLiveQueueClick,
                     icon = Icons.Default.Visibility,
                     backgroundColor = ActionBlue
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                SecondaryButton(
-                    text = "Send Token to SMS App",
-                    onClick = {
-                        val smsText = "QueueLess Token Confirmation: You have taken Token #$tokenNumber for $serviceName at ${tokenInfo?.orgName ?: "Office"}. Assigned counter: $assignedCounter. Estimated wait: $estimatedWaitMinutes mins. Recommended arrival: ${tokenInfo?.recommendedArrival ?: "Soon"}."
-                        com.example.queueless_smartqueue.util.SmsHelper.openSmsApp(context, currentUser.phone, smsText)
-                    },
-                    borderColor = ActionBlue,
-                    textColor = ActionBlue
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))

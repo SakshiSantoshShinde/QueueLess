@@ -35,6 +35,11 @@ class MainActivity : ComponentActivity() {
         val isConnected = cm?.activeNetworkInfo?.isConnected == true
         NetworkStateMonitor.updateStatus(isConnected, this)
 
+        // Initialize SQLite Database and local managers
+        com.example.queueless_smartqueue.data.QueueDatabaseHelper.getInstance(this)
+        com.example.queueless_smartqueue.data.UserAuthManager.init(this)
+        com.example.queueless_smartqueue.data.LocalQueueEngine.init(this)
+
         setContent {
             QueueLessTheme {
                 Surface(

@@ -1,5 +1,6 @@
 package com.example.queueless_smartqueue.data
 
+import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,11 +28,11 @@ sealed class AuthResult {
 
 /**
  * Manages user authentication, profile data, registration,
- * and notification preferences for QueueLess.
+ * and notification preferences for QueueLess with SQLite persistence.
  *
  * Rules:
  * - Admin credentials: admin@gmail.com / admin123 (strictly pre-configured, non-registerable)
- * - Users must be registered before logging in, or can create a new account in registration screen.
+ * - Users are persisted in local SQLite database (TABLE_USERS).
  * - Registration is strictly for normal users, not admin.
  */
 object UserAuthManager {
@@ -41,6 +42,8 @@ object UserAuthManager {
         var password: String
     )
 
+    private var dbHelper: QueueDatabaseHelper? = null
+
     private fun normalizePhone(p: String): String {
         val digits = p.replace(Regex("[^0-9]"), "")
         return if (digits.length >= 10) digits.takeLast(10) else digits
@@ -48,7 +51,7 @@ object UserAuthManager {
 
     private fun normalizeEmail(e: String): String = e.trim().lowercase()
 
-    // Pre-registered users store
+    // In-memory fallback and reactive cache
     private val _registeredUsers = mutableListOf(
         UserCredential(
             user = AppUser(
@@ -107,7 +110,21 @@ object UserAuthManager {
     val notificationPrefs: StateFlow<NotificationPreferences> = _notificationPrefs.asStateFlow()
 
     /**
-     * Authenticate user or admin
+     * Initialize UserAuthManager with SQLite Database Helper.
+     */
+    fun init(context: Context) {
+        val helper = QueueDatabaseHelper.getInstance(context)
+        dbHelper = helper
+        val usersFromDb = helper.getAllUsers()
+        if (usersFromDb.isNotEmpty()) {
+            _registeredUsers.clear()
+            _registeredUsers.addAll(usersFromDb.map { UserCredential(it.first, it.second) })
+            _currentUser.value = _registeredUsers.first().user
+        }
+    }
+
+    /**
+     * Authenticate user or admin against SQLite database.
      */
     fun login(identifier: String, passwordInput: String): AuthResult {
         val trimmedIdentifier = identifier.trim()
@@ -121,7 +138,6 @@ object UserAuthManager {
         }
 
         val normIdent = normalizeEmail(trimmedIdentifier)
-        val cleanPhone = normalizePhone(trimmedIdentifier)
 
         // 1. Check Admin Credentials
         if (normIdent == normalizeEmail(ADMIN_EMAIL)) {
@@ -133,7 +149,19 @@ object UserAuthManager {
             }
         }
 
-        // 2. Check Registered Users by Email or Phone
+        // 2. Query SQLite Database for User Credential
+        val dbUser = dbHelper?.getUserByEmailOrPhone(trimmedIdentifier)
+        if (dbUser != null) {
+            val (user, password) = dbUser
+            if (password != trimmedPassword) {
+                return AuthResult.Error("Incorrect password. Please try again.")
+            }
+            _currentUser.value = user
+            return AuthResult.Success(user, isAdmin = false)
+        }
+
+        // 3. Fallback to in-memory store
+        val cleanPhone = normalizePhone(trimmedIdentifier)
         val matchedCredential = _registeredUsers.find { cred ->
             normalizeEmail(cred.user.email) == normIdent ||
                     (cleanPhone.isNotEmpty() && normalizePhone(cred.user.phone) == cleanPhone)
@@ -147,13 +175,12 @@ object UserAuthManager {
             return AuthResult.Error("Incorrect password. Please try again.")
         }
 
-        // User authenticated successfully
         _currentUser.value = matchedCredential.user
         return AuthResult.Success(matchedCredential.user, isAdmin = false)
     }
 
     /**
-     * Register a new user. Admin CANNOT be registered here.
+     * Register a new user and persist directly to SQLite database.
      */
     fun registerUser(
         name: String,
@@ -187,24 +214,19 @@ object UserAuthManager {
             return AuthResult.Error("Admin credentials cannot be created via user registration.")
         }
 
-        // If email already exists, update user info and password so user can log in without blocking
-        val existingIndex = _registeredUsers.indexOfFirst {
-            normalizeEmail(it.user.email) == normEmail
-        }
-
-        if (existingIndex != -1) {
-            // Update existing user credentials
-            val updatedUser = _registeredUsers[existingIndex].user.copy(
+        // Check if user already exists in SQLite
+        val existingDbUser = dbHelper?.getUserByEmailOrPhone(trimmedEmail)
+        if (existingDbUser != null) {
+            val updatedUser = existingDbUser.first.copy(
                 name = trimmedName,
                 phone = cleanPhone
             )
-            _registeredUsers[existingIndex].user = updatedUser
-            _registeredUsers[existingIndex].password = trimmedPassword
+            dbHelper?.updateUser(updatedUser, trimmedPassword)
             _currentUser.value = updatedUser
             return AuthResult.Success(updatedUser, isAdmin = false)
         }
 
-        // Create and register brand new user
+        // Create and register brand new user in SQLite
         val newUser = AppUser(
             id = "usr_${System.currentTimeMillis()}",
             name = trimmedName,
@@ -214,6 +236,8 @@ object UserAuthManager {
             isVerified = true
         )
 
+        dbHelper?.insertUser(newUser, trimmedPassword)
+
         _registeredUsers.add(UserCredential(newUser, trimmedPassword))
         _currentUser.value = newUser
 
@@ -221,7 +245,7 @@ object UserAuthManager {
     }
 
     /**
-     * Update user profile information
+     * Update user profile information in SQLite database.
      */
     fun updateProfile(name: String, phone: String): Boolean {
         val current = _currentUser.value
@@ -231,6 +255,9 @@ object UserAuthManager {
             phone = cleanPhone
         )
         _currentUser.value = updated
+
+        // Update in SQLite
+        dbHelper?.updateUser(updated)
 
         val index = _registeredUsers.indexOfFirst { it.user.id == current.id }
         if (index != -1) {
@@ -260,6 +287,6 @@ object UserAuthManager {
      * Log out current user
      */
     fun logout() {
-        _currentUser.value = _registeredUsers.first().user
+        _currentUser.value = _registeredUsers.firstOrNull()?.user ?: adminUser
     }
 }

@@ -43,13 +43,6 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     
-    // AndroidX Views & Navigation
-    implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation("androidx.cardview:cardview:1.0.0")
-    implementation("androidx.fragment:fragment-ktx:1.8.5")
-    implementation("androidx.navigation:navigation-fragment-ktx:2.8.3")
-    implementation("androidx.navigation:navigation-ui-ktx:2.8.3")
-    implementation("androidx.constraintlayout:constraintlayout:2.2.0")
 
     // Compose
     implementation(platform(libs.androidx.compose.bom))

@@ -314,24 +314,9 @@ fun LiveQueueScreen(
                 }
             }
 
-            // SMS & Cancel button actions
+            // Cancel button action
             item {
-                val context = androidx.compose.ui.platform.LocalContext.current
-                val currentUser by com.example.queueless_smartqueue.data.UserAuthManager.currentUser.collectAsState()
-
                 Spacer(modifier = Modifier.height(6.dp))
-
-                SecondaryButton(
-                    text = "Send Queue Update via SMS",
-                    onClick = {
-                        val message = "QueueLess Alert: Your Token #${tokenInfo.tokenNumber} for ${tokenInfo.serviceName} at ${tokenInfo.orgName} is waiting. Currently serving: ${tokenInfo.currentlyServingToken}. People ahead: ${tokenInfo.peopleAhead}. Assigned counter: ${tokenInfo.assignedCounter}. Estimated arrival: ${tokenInfo.recommendedArrival}."
-                        com.example.queueless_smartqueue.util.SmsHelper.openSmsApp(context, currentUser.phone, message)
-                    },
-                    borderColor = ActionBlue,
-                    textColor = ActionBlue
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
 
                 SecondaryButton(
                     text = "Cancel Token",
